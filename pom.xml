@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- =====================================================================
+         PARENT — Spring Boot 3.x BOM gerencia versões de dependências
+         ===================================================================== -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.2</version>
+        <relativePath/>
+    </parent>
+
+    <!-- =====================================================================
+         COORDENADAS DO PROJETO
+         ===================================================================== -->
+    <groupId>com.sentinelops</groupId>
+    <artifactId>sentinelops-core</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>SentinelOps Core</name>
+    <description>
+        Ecossistema de agentes de IA locais — fundação técnica com
+        Spring Boot 3, SQLite, Resilience4j e cliente Gemini.
+    </description>
+
+    <!-- =====================================================================
+         PROPRIEDADES GLOBAIS
+         ===================================================================== -->
+    <properties>
+        <java.version>21</java.version>
+        <!-- Versão do SQLite JDBC — mantida fora do BOM -->
+        <sqlite.jdbc.version>3.46.0.0</sqlite.jdbc.version>
+        <!-- Hibernate Community Dialects (inclui SQLiteDialect) -->
+        <hibernate.community.dialects.version>6.5.2.Final</hibernate.community.dialects.version>
+        <!-- Resilience4j — Spring Boot 3 starter alinha com a BOM do Spring -->
+        <resilience4j.version>2.2.0</resilience4j.version>
+    </properties>
+
+    <!-- =====================================================================
+         DEPENDÊNCIAS
+         ===================================================================== -->
+    <dependencies>
+
+        <!-- ── Web Layer ────────────────────────────────────────────────── -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- ── Persistência ─────────────────────────────────────────────── -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- Driver JDBC SQLite -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>${sqlite.jdbc.version}</version>
+        </dependency>
+
+        <!-- Dialecto Hibernate para SQLite (Hibernate 6 / Spring Boot 3) -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-community-dialects</artifactId>
+            <version>${hibernate.community.dialects.version}</version>
+        </dependency>
+
+        <!-- ── Resiliência ──────────────────────────────────────────────── -->
+        <!--
+            O starter do Resilience4j para Spring Boot 3 registra automaticamente
+            os aspectos AOP, actuator endpoints e auto-configuration.
+        -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+
+        <!-- AOP necessário para as anotações @Retry, @CircuitBreaker etc. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <!-- ── Observabilidade (Actuator) ───────────────────────────────── -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- ── Bean Validation (jakarta.validation) ─────────────────────── -->
+        <!--
+            Necessário para @Valid, @NotBlank, @NotNull, @DecimalMin etc.
+            O spring-boot-starter-web inclui Hibernate Validator como runtime,
+            mas o starter de validation também adiciona o integration com Spring MVC.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- ── Lombok ───────────────────────────────────────────────────── -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- ── Configuração de propriedades com validação ───────────────── -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- ── Testes ────────────────────────────────────────────────────── -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- =====================================================================
+         BUILD
+         ===================================================================== -->
+    <build>
+        <plugins>
+            <!-- Plugin principal do Spring Boot — empacotamento executável -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- Classe principal explícita — necessária no goal 'run' em alguns ambientes -->
+                    <mainClass>com.sentinelops.SentinelOpsApplication</mainClass>
+                    <!-- Exclui Lombok do JAR final -->
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- Compilador Java 21 com suporte a anotações (Lombok) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,57 @@
+target/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+.idea/
+.vscode/
+*.log
+application-local.yml
+
+# Chave de API — nunca commitar em produção
+# O arquivo application-local.yml deve conter as chaves reais
+# application.yml deve usar apenas ${GEMINI_API_KEY:placeholder}
+
+# Maven
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IntelliJ IDEA
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Spring Boot
+spring.log
+
+# SQLite — banco local de desenvolvimento (não deve ir ao repo)
+*.sqlite
+*.sqlite3
+
+# Backup de banco
+*.db-journal
+
+# Temporários / builds
+tmp/
+temp/
+build/
+out/

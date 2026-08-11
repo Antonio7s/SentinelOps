@@ -1,0 +1,35 @@
+# =============================================================================
+# application-test.yml — Perfil de Testes
+# Sobrescreve propriedades para evitar dependências externas nos testes
+# =============================================================================
+
+spring:
+  datasource:
+    # Banco em memória para testes (descartado ao final de cada test run)
+    url: jdbc:sqlite::memory:
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    hibernate:
+      # Em testes, recria o schema do zero a cada execução
+      ddl-auto: create-drop
+    show-sql: false
+
+  # Desabilita o TaskScheduler nos testes para evitar que o TriageScheduler
+  # dispare durante o carregamento do contexto Spring.
+  task:
+    scheduling:
+      pool:
+        size: 0
+
+gemini:
+  api-key: "TEST_API_KEY_PLACEHOLDER"
+  base-url: "https://generativelanguage.googleapis.com/v1beta"
+  model: "gemini-3.5-pro"
+  connect-timeout-seconds: 5
+  read-timeout-seconds: 10
+
+logging:
+  level:
+    root: WARN
+    com.sentinelops: INFO

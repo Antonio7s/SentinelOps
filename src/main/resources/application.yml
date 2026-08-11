@@ -1,0 +1,146 @@
+# =============================================================================
+# SentinelOps — Configuração Principal
+# Spring Boot 3 | SQLite | Resilience4j | Gemini API
+# =============================================================================
+
+spring:
+  application:
+    name: sentinelops-core
+
+  # ---------------------------------------------------------------------------
+  # DATASOURCE — SQLite (arquivo local persistido junto ao JAR)
+  # ---------------------------------------------------------------------------
+  datasource:
+    # O prefixo "jdbc:sqlite:" aceita caminho relativo; o arquivo será criado
+    # no diretório de execução da aplicação.
+    url: jdbc:sqlite:sentinelops.db
+    driver-class-name: org.sqlite.JDBC
+
+    # HikariCP — pool mínimo para SQLite (arquivo único, sem concorrência pesada)
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 20000
+      idle-timeout: 300000
+
+  # ---------------------------------------------------------------------------
+  # JPA / HIBERNATE
+  # ---------------------------------------------------------------------------
+  jpa:
+    # "update" cria tabelas inexistentes e altera colunas sem dropar dados.
+    # Para produção, migre para Flyway/Liquibase e use "validate".
+    hibernate:
+      ddl-auto: update
+
+    properties:
+      hibernate:
+        # Dialeto comunitário do Hibernate 6 para SQLite
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+
+        # Formata o SQL gerado nos logs (útil em desenvolvimento)
+        format_sql: true
+
+        # Habilita geração de estatísticas (desative em produção)
+        generate_statistics: false
+
+    # Exibe o SQL gerado no console (desative em produção)
+    show-sql: true
+
+# =============================================================================
+# GEMINI API
+# =============================================================================
+gemini:
+  # ATENÇÃO: substitua este placeholder pela sua chave antes de executar.
+  # Em produção, injete via variável de ambiente GEMINI_API_KEY.
+  # ⚠️  ATENÇÃO: chave via variável de ambiente.
+  api-key: "${GEMINI_API_KEY:YOUR_GEMINI_API_KEY_HERE}"
+
+  # URL base da API Gemini — ajuste o modelo conforme necessário
+  base-url: "https://generativelanguage.googleapis.com/v1beta"
+
+  # Nome do modelo a ser utilizado nas chamadas
+  model: "gemini-3.5-pro"
+
+  # Timeout das requisições HTTP (em segundos)
+  connect-timeout-seconds: 10
+  read-timeout-seconds: 60
+
+# =============================================================================
+# RESILIENCE4J — Políticas de Resiliência para o cliente Gemini
+# =============================================================================
+resilience4j:
+
+  # ---------------------------------------------------------------------------
+  # RETRY — Exponential Backoff para erros HTTP 429 (Too Many Requests)
+  # ---------------------------------------------------------------------------
+  retry:
+    instances:
+      geminiApiRetry:
+        # Número máximo de tentativas (inclui a tentativa inicial)
+        max-attempts: 4
+
+        # Espera inicial entre tentativas
+        wait-duration: 2s
+
+        # Configura Exponential Backoff com jitter para evitar thundering herd
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2.0
+
+        # Jitter randômico: evita que múltiplas instâncias disparem juntas
+        # Fator entre 0.0 e 1.0 — 0.5 = ±50% de variação
+        exponential-max-wait-duration: 30s
+
+        # Exceções que ATIVAM o retry (apenas erros de rate-limit)
+        retry-exception-predicate: com.sentinelops.infrastructure.ai.GeminiRateLimitPredicate
+
+        # Exceções que NUNCA devem ser retentadas (erros de negócio, 4xx != 429)
+        ignore-exceptions:
+          - com.sentinelops.infrastructure.ai.GeminiNonRetryableException
+
+  # ---------------------------------------------------------------------------
+  # CIRCUIT BREAKER — Proteção adicional (opcional, para expansão futura)
+  # ---------------------------------------------------------------------------
+  circuitbreaker:
+    instances:
+      geminiApiCircuitBreaker:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+
+# =============================================================================
+# MANAGEMENT / ACTUATOR
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        # Expõe endpoints úteis para monitoramento do hackathon
+        include: health, info, metrics, retries, circuitbreakers
+  endpoint:
+    health:
+      show-details: always
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+logging:
+  level:
+    root: INFO
+    com.sentinelops: DEBUG
+    org.hibernate.SQL: DEBUG
+    io.github.resilience4j: DEBUG
+
+  pattern:
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%5p) %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
+
+# =============================================================================
+# SERVER
+# =============================================================================
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
